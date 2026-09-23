@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MIWOO Assistant — Локальный ИИ-ассистент</title>
+<meta name="description" content="MIWOO — локальный ИИ-ассистент для Windows. Работает офлайн, без облака и подписок.">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAvCAYAAAChd5n0AAADO0lEQVR4nO2ZP0v7QBzGn/wx6QWyiKhDqaCjoKCTCAU3dQmZxEkEnXwDvgTfg2gRBMFBkqE24KyD4OJYHRxU2sUK0UBrkvsN2mBtTdpL2p9DPpDl7nLP98ndfXO5ACkpKSkpKSng+tVxqVSivu931ZbneaysrPQtlp4wDIPquk4BxLp0XaeGYdDBOwCgaVoQiKIosa5mP199dk2s4by8vKTLy8uwbRuKosTpqg3HcaCqKizLwuLiYmScsYyoqkr7YaJJ04xt25Fx8qwimqb11QQAKIoC27bRzTRjMmIYBjVNs68mmiiKAtM0EZUAmIwcHR2xRRWDKE3WNUIHMRrfcRwHCImXeY38NXo2UiqVIhcepRSe5+Hj4wOu66LTG973fbiuG7SJqy121cOPAMKg9FNLVVWoqgrP81Cr1VCv1yGKYtBGEAQMDw+DEIK3tzdUq9XI5BGm3bORKFzXRTabxdLSEubn5/H6+opisYjb29vgyQuCgNnZWayurmJsbAw3Nzc4OztDrVbD0NBQ0iF1plgs/roVIYRQAHR7e7tlChQKBTo3N0d5nqeyLNNcLkdPTk5a2uzs7FAAlBDy69blS7sjiS52z/MwPj6OfD7fUr65ucnNzMyAEAKO4zA1NYX19fWWDLS2tobR0VF4nseknaiRRqOBXC6HiYmJtrrJyUkQQiAIAqanp9vq8/k8l81m0Wg0mLQTT7+e5wUL/me57/tBRvvtXlYSNSJJEiqVCp6fn9vqHh8fUa/X4fs+7u7uOt5fqVQgSRKTdqJGBEHA09MTLi4uWsr39/fp9fU13t/fQSlFuVzG4eFhy7BtbW3RarUapOheSTT9chwHURRxdXWF3d1durCwgIeHBxwcHKBcLiOTyQAAXl5ecHp6ikKhQEdGRnB+fo7j42PIssysnfh7RJIk3N/fY29vr6U8k8mA5z8ngOu6sCwLlmUF9bIsQxAEZt2ejTSDCUOSpNC5zvM80ydAmHa6+/1rMBnRdb35hAaC4zjQdT20DZORjY0NpoDiEKXJfIqiadpAvtsdx4GmaTBNMzTW9DgIACzLgqqqfVkv3w/oBsZfODJNjP99iJ3+VkhJSUn5L/wDDOvK3nmiBHAAAAAASUVORK5CYII=">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+#waves{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:0;opacity:1;contain:strict}
+
+/* ============ NAV ============ */
+.nav{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:24px 48px;max-width:1400px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:12px;font-size:15px;font-weight:700;letter-spacing:-.01em;cursor:pointer;user-select:none}
+.logo-mark{width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{display:block;overflow:visible}
+.logo-mark .mark-bg{fill:var(--fg);transition:fill .25s}
+.logo-mark .mark-eye{fill:var(--bg);transform-box:fill-box;transform-origin:center;animation:eyeBlink 4.6s infinite}
+.logo-mark .mark-eye.b{animation-delay:.06s}
+@keyframes eyeBlink{0%,88%,100%{transform:scaleY(1)}92%,96%{transform:scaleY(.08)}}
+.logo:hover .mark-eye{animation-duration:.7s}
+.nav-right{display:flex;align-items:center;gap:20px;font-size:13px;color:var(--muted)}
+.nav-right button{color:var(--muted);font-size:13px;transition:color .2s}
+.nav-right button:hover{color:var(--fg)}
+.ver{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:100px;background:var(--panel);color:var(--muted);letter-spacing:.02em;border:1px solid var(--border)}
+.theme-toggle{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--muted);background:var(--panel);border:1px solid var(--border);transition:color .15s,background .15s,transform .15s}
+.theme-toggle:hover{color:var(--fg);transform:translateY(-1px)}
+.theme-toggle svg{width:15px;height:15px}
+.theme-toggle .i-moon{display:none}
+
+/* ============ HERO ============ */
+.hero{position:relative;z-index:10;min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px 120px;text-align:center}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:100px;background:var(--panel);color:var(--fg);font-size:12px;font-weight:500;margin-bottom:32px;border:1px solid var(--border);animation:fadeUp .6s .1s both}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:var(--fg);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.14);animation:bpulse 2.4s infinite}
+@keyframes bpulse{0%,100%{box-shadow:0 0 0 3px rgba(var(--accent-rgb),.14)}50%{box-shadow:0 0 0 6px rgba(var(--accent-rgb),.06)}}
+h1{font-size:clamp(56px,9vw,104px);font-weight:800;letter-spacing:-.045em;line-height:.95;margin-bottom:24px;color:var(--fg);background:linear-gradient(135deg,var(--fg) 45%,var(--muted));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:fadeUp .7s .2s both}
+.sub{font-size:clamp(15px,1.6vw,18px);color:var(--muted);line-height:1.55;max-width:520px;margin-bottom:36px;animation:fadeUp .7s .35s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.counter{display:inline-flex;align-items:center;gap:10px;padding:11px 20px;border-radius:100px;background:var(--card-bg);border:1px solid var(--border);font-size:13.5px;color:var(--muted);letter-spacing:.01em;margin-bottom:22px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.03),0 4px 16px rgba(0,0,0,.04);transition:border-color .25s,box-shadow .25s,background .25s;animation:fadeUp .7s .5s both;contain:layout paint}
+.counter:hover{border-color:var(--muted);box-shadow:0 2px 6px rgba(0,0,0,.05),0 10px 28px rgba(0,0,0,.08)}
+.counter svg{width:15px;height:15px;flex-shrink:0;color:var(--fg);opacity:.75}
+.count-num{display:inline-flex;align-items:center;font-size:16px;font-weight:800;line-height:1;color:var(--fg);letter-spacing:.005em;font-variant-numeric:tabular-nums;height:1em}
+.count-label{color:var(--muted);font-weight:500}
+.d-slot{position:relative;display:inline-block;overflow:hidden;height:1em;min-width:.55em;vertical-align:top;text-align:center;line-height:1}
+.d-slot.d-sep{min-width:.26em;color:var(--muted);font-weight:700}
+.d-slot .d-char{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.d-slot.rolling .d-char.old{animation:rollUp .46s cubic-bezier(.4,0,.2,1) forwards}
+.d-slot.rolling .d-char.new{animation:rollIn .46s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes rollUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-110%);opacity:0}}
+@keyframes rollIn{0%{transform:translateY(110%);opacity:0}55%{opacity:1}100%{transform:translateY(0);opacity:1}}
+.count-num.intro .d-slot{opacity:.9}
+.count-num.done{animation:countDone .65s cubic-bezier(.3,1.4,.5,1)}
+@keyframes countDone{0%{transform:scale(1)}35%{transform:scale(1.14)}100%{transform:scale(1)}}
+
+.btn-primary{display:inline-flex;align-items:center;gap:10px;padding:16px 28px;border-radius:14px;background:var(--fg);color:var(--bg);font-size:15px;font-weight:600;transition:transform .15s cubic-bezier(.3,1.3,.5,1),box-shadow .2s,background .2s;box-shadow:0 1px 2px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.1);animation:fadeUp .7s .58s both}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 1px 2px rgba(0,0,0,.08),0 14px 36px rgba(0,0,0,.22)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary svg{width:16px;height:16px}
+.meta{font-size:12px;color:var(--faint);letter-spacing:.01em;animation:fadeUp .7s .7s both;margin-top:22px}
+
+/* ============ SECTION ============ */
+.section{position:relative;z-index:10;max-width:940px;margin:0 auto;padding:20px 32px 90px;scroll-margin-top:40px}
+.section-wide{max-width:1160px}
+.section-label{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+.section-title{font-size:clamp(26px,3.6vw,38px);font-weight:800;letter-spacing:-.03em;line-height:1.12;margin-bottom:12px;color:var(--fg)}
+.section-sub{font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:40px;max-width:560px}
+
+/* ============ FAQ ============ */
+.faq{border-top:1px solid var(--border)}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-item summary{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 4px;cursor:pointer;font-size:15.5px;font-weight:600;letter-spacing:-.01em;color:var(--fg);list-style:none;user-select:none;transition:color .2s}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary:hover{color:var(--muted)}
+.faq-item[open] summary{color:var(--fg)}
+.faq-item summary::after{content:'';width:11px;height:11px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .4s cubic-bezier(.34,1.3,.4,1),border-color .2s;flex-shrink:0;margin-right:6px}
+.faq-item[open] summary::after{transform:rotate(-135deg) translate(-2px,-2px);border-color:var(--fg)}
+.faq-body{height:auto;overflow:hidden;will-change:height}
+.faq-body-inner{padding:0 36px 26px 4px;font-size:14px;line-height:1.7;color:var(--muted)}
+.faq-body-inner b{color:var(--fg);font-weight:600}
+
+/* ============ SHOTS ============ */
+.shots{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.shot{margin:0;border-radius:18px;overflow:hidden;border:1px solid var(--border);background:var(--card-bg);transition:border-color .25s,transform .25s,box-shadow .25s;display:flex;flex-direction:column;position:relative}
+.shot:hover{border-color:var(--muted);transform:translateY(-3px);box-shadow:0 18px 44px rgba(0,0,0,.13)}
+.shot-visual{position:relative;aspect-ratio:16/10;background:#0b0b0c;overflow:hidden;display:block}
+.shot-visual svg{display:block;width:100%;height:100%}
+.shot figcaption{padding:14px 16px 15px;font-size:12px;color:var(--muted);border-top:1px solid var(--border);line-height:1.5;display:flex;flex-direction:column;gap:3px}
+.shot figcaption b{color:var(--fg);font-weight:700;font-size:12.5px;letter-spacing:-.005em}
+.shot:nth-child(1){grid-column:span 3}
+.shot:nth-child(2){grid-column:span 3}
+.shot:nth-child(3){grid-column:span 2}
+.shot:nth-child(4){grid-column:span 2}
+.shot:nth-child(5){grid-column:span 2}
+
+/* ============ FOOTER ============ */
+.footer{position:relative;z-index:10;background:transparent;padding:40px 32px 60px;text-align:center;font-size:12px;color:var(--faint);content-visibility:auto;contain-intrinsic-size:120px}
+.footer span{margin:0 10px}
+
+/* ============ MODAL ============ */
+.modal{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:1000;display:none;align-items:center;justify-content:center;padding:24px}
+.modal.show{display:flex;animation:mFadeIn .25s ease-out}
+.modal.closing{animation:mFadeOut .28s ease-in forwards}
+@keyframes mFadeIn{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(12px)}}
+@keyframes mFadeOut{from{opacity:1}to{opacity:0}}
+.modal-box{width:100%;max-width:800px;background:var(--card-bg);color:var(--fg);border-radius:26px;padding:44px 44px 40px;box-shadow:0 32px 80px rgba(0,0,0,.3),0 0 0 1px var(--border);position:relative;animation:mSlideUp .42s cubic-bezier(.2,1.2,.4,1);max-height:90vh;overflow-y:auto;overscroll-behavior:contain}
+.modal.closing .modal-box{animation:mSlideDown .28s cubic-bezier(.4,0,.6,1) forwards}
+@keyframes mSlideUp{from{opacity:0;transform:translateY(30px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes mSlideDown{from{opacity:1;transform:none}to{opacity:0;transform:translateY(18px) scale(.97)}}
+.modal-close{position:absolute;top:22px;right:22px;width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--faint);transition:background .15s,color .15s,transform .3s}
+.modal-close:hover{background:var(--panel);color:var(--fg);transform:rotate(90deg)}
+.modal-close:active{transform:rotate(90deg) scale(.85)}
+.modal h3{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px}
+.modal-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.55;max-width:560px}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px}
+.step{display:flex;flex-direction:column;padding:22px 20px;border-radius:18px;border:1px solid var(--border);background:var(--card-bg);transition:border-color .2s,transform .2s,box-shadow .2s}
+.step:hover{border-color:var(--muted);transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.09)}
+.step-num{width:34px;height:34px;border-radius:11px;background:var(--panel);color:var(--fg);display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:800;border:1px solid var(--border);margin-bottom:16px;flex-shrink:0}
+.step-title{font-size:13.5px;font-weight:700;margin-bottom:8px;color:var(--fg);letter-spacing:-.005em;line-height:1.3}
+.step-desc{font-size:12.5px;color:var(--muted);line-height:1.6}
+.step-desc b{color:var(--fg);font-weight:600}
+.kbd{display:inline-block;padding:2px 7px;border-radius:6px;background:var(--panel);border:1px solid var(--border);font-size:11.5px;font-weight:600;color:var(--fg);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.4}
+
+.cmd-block{border-radius:16px;border:1px solid var(--border);background:var(--panel);overflow:hidden;margin-bottom:18px;transition:border-color .2s,box-shadow .2s}
+.cmd-block:hover{border-color:var(--muted);box-shadow:0 8px 28px rgba(0,0,0,.08)}
+.cmd-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px 11px 18px;border-bottom:1px solid var(--border);gap:12px}
+.cmd-lang{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.cmd-lang .cmd-dot{width:6px;height:6px;border-radius:50%;background:var(--fg);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.12)}
+.cmd-copy{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:7px 13px;border-radius:9px;background:var(--card-bg);border:1px solid var(--border);color:var(--fg);transition:border-color .15s,transform .15s,background .2s,color .2s;white-space:nowrap}
+.cmd-copy:hover{border-color:var(--muted);transform:translateY(-1px)}
+.cmd-copy:active{transform:translateY(0) scale(.97)}
+.cmd-copy svg{width:13px;height:13px}
+.cmd-copy .ic-check{display:none}
+.cmd-copy.copied{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.cmd-copy.copied .ic-copy{display:none}
+.cmd-copy.copied .ic-check{display:block}
+.cmd-code{margin:0;padding:16px 18px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:12.5px;line-height:1.65;color:var(--fg);overflow-x:auto;white-space:pre-wrap;word-break:break-all;-webkit-overflow-scrolling:touch;user-select:all;cursor:text}
+.cmd-code .cmd-pipe{color:var(--fg);font-weight:700;opacity:.55}
+.cmd-note{margin-top:22px;padding:16px 20px;border-radius:14px;background:var(--panel);font-size:12.5px;color:var(--muted);line-height:1.6;display:flex;align-items:flex-start;gap:12px}
+.cmd-note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:var(--fg);opacity:.75}
+.cmd-note b{color:var(--fg);font-weight:600}
+
+.reqs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.req-card{padding:22px 20px;border-radius:16px;border:1px solid var(--border);background:var(--card-bg);transition:border-color .2s,transform .2s,box-shadow .2s}
+.req-card:hover{border-color:var(--muted);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
+.req-ic{width:38px;height:38px;border-radius:11px;background:var(--panel);display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--fg)}
+.req-ic svg{width:18px;height:18px}
+.req-title{font-size:13.5px;font-weight:700;margin-bottom:6px;color:var(--fg);letter-spacing:-.005em}
+.req-val{font-size:12.5px;color:var(--muted);line-height:1.55}
+.req-val b{color:var(--fg);font-weight:600}
+.req-footer{margin-top:28px;padding:16px 20px;border-radius:14px;background:var(--panel);font-size:12.5px;color:var(--muted);line-height:1.6;display:flex;align-items:flex-start;gap:12px}
+.req-footer svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:var(--fg);opacity:.75}
+
+@media(max-width:900px){
+  .shots{grid-template-columns:repeat(2,1fr)}
+  .shot{grid-column:span 1 !important}
+  .shot:nth-child(5){grid-column:span 2 !important}
+}
+@media(max-width:760px){
+  .steps{grid-template-columns:1fr}
+  .faq-body-inner{padding-right:16px}
+}
+@media(max-width:640px){
+  .nav{padding:20px 24px}
+  .nav-right{gap:14px}
+  .hero{padding:20px 24px 100px}
+  .btn-primary{padding:15px 24px}
+  .section{padding:10px 24px 70px}
+  .modal-box{padding:32px 22px 28px;border-radius:22px}
+  .modal h3{font-size:22px}
+  .modal-close{top:16px;right:16px;width:32px;height:32px}
+  .counter{padding:10px 16px;font-size:12.5px}
+  .count-num{font-size:15px}
+  .step{padding:18px 16px}
+  .cmd-code{font-size:11.5px;padding:14px}
+  .shots{grid-template-columns:1fr;gap:14px}
+  .shot:nth-child(5){grid-column:span 1 !important}
+  .faq-item summary{font-size:14.5px;padding:20px 4px}
+  .faq-body-inner{font-size:13.5px;padding:0 24px 22px 4px}
+}
+
+:root{--bg:#fff;--fg:#0a0a0a;--muted:#6b6b6b;--faint:#9a9a9a;--panel:#f4f4f6;--border:#ececec;--card-bg:#fff;--overlay:rgba(10,10,15,.5);--accent:#0a0a0a;--accent-rgb:10,10,10}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0b0b0c;--fg:#f5f5f6;--muted:#a7a7ab;--faint:#7a7a7d;--panel:#18181b;--border:#27272a;--card-bg:#141416;--overlay:rgba(0,0,0,.6);--accent:#f5f5f6;--accent-rgb:245,245,246}}
+:root[data-theme="dark"]{--bg:#0b0b0c;--fg:#f5f5f6;--muted:#a7a7ab;--faint:#7a7a7d;--panel:#18181b;--border:#27272a;--card-bg:#141416;--overlay:rgba(0,0,0,.6);--accent:#f5f5f6;--accent-rgb:245,245,246}
+body{background:var(--bg);color:var(--fg);transition:background .25s,color .25s}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
+        <rect class="mark-bg" x="2" y="2" width="36" height="36" rx="12"/>
+        <ellipse class="mark-eye a" cx="15" cy="20" rx="3.2" ry="4.4"/>
+        <ellipse class="mark-eye b" cx="25" cy="20" rx="3.2" ry="4.4"/>
+      </svg>
+    </div>
+    MIWOO
+  </div>
+  <div class="nav-right">
+    <button id="openReqs">Требования</button>
+    <button id="themeToggle" class="theme-toggle" aria-label="Переключить тему">
+      <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+    </button>
+    <span class="ver">v1.6</span>
+  </div>
+</nav>
+
+<main class="hero">
+  <div class="badge"><span class="dot"></span>Локальная ИИ · Работает офлайн</div>
+  <h1>MIWOO</h1>
+  <p class="sub">Ассистент, который работает прямо на вашем устройстве. Без облака. Без слежки. Все данные — только ваши.</p>
+
+  <div class="counter" id="dlCounter" title="Обновляется в реальном времени">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M6 11l6 6 6-6"/><path d="M5 21h14"/></svg>
+    <span class="count-num" id="dlCount" aria-live="polite"></span>
+    <span class="count-label">скачиваний</span>
+  </div>
+
+  <button class="btn-primary" id="downloadBtn">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.5L10.5 4.5v6.5H3V5.5zM3 12h7.5v6.5L3 17.5V12zM11.5 4.3L21 3v8H11.5V4.3zM11.5 12H21v8l-9.5-1.3V12z"/></svg>
+    Скачать для Windows
+  </button>
+
+  <div class="meta">Windows 10 / 11 · 64-bit · ~180 МБ · v1.6.2</div>
+</main>
+
+<!-- ============ FAQ ============ -->
+<section class="section" id="faq">
+  <span class="section-label">FAQ</span>
+  <h2 class="section-title">Частые вопросы</h2>
+  <p class="section-sub">Коротко о главном — перед тем как скачать.</p>
+
+  <div class="faq">
+    <details class="faq-item" open>
+      <summary>Это бесплатно?</summary>
+      <div class="faq-body"><div class="faq-body-inner">
+        <b>Абсолютно бесплатно.</b> Версия Free работает без ограничений по времени — без регистрации, без подписок и без скрытых платежей. Pro-функции опциональны и покупаются один раз, только если захотите.
+      </div></div>
+    </details>
+    <details class="faq-item">
+      <summary>Это безопасно?</summary>
+      <div class="faq-body"><div class="faq-body-inner">
+        Да. Установочный скрипт <b>открыт на GitHub</b> — его можно прочитать перед запуском. Всё скачивается и работает локально, никакие данные никуда не отправляются.
+      </div></div>
+    </details>
+    <details class="faq-item">
+      <summary>Нужен ли интернет?</summary>
+      <div class="faq-body"><div class="faq-body-inner">
+        Только во время установки — чтобы скачать скрипт и модель. Дальше MIWOO работает <b>полностью офлайн</b>.
+      </div></div>
+    </details>
+    <details class="faq-item">
+      <summary>Антивирус блокирует установку. Что делать?</summary>
+      <div class="faq-body"><div class="faq-body-inner">
+        Windows SmartScreen может предупредить — это нормально для скриптов из интернета. Нажмите <b>«Подробнее»</b> → <b>«Выполнить в любом случае»</b>. Содержимое скрипта открыто, можно проверить вручную.
+      </div></div>
+    </details>
+    <details class="faq-item">
+      <summary>Потянет ли мой компьютер?</summary>
+      <div class="faq-body"><div class="faq-body-inner">
+        Да. Достаточно <b>8 ГБ RAM</b> и любой WebGPU-совместимой графики — даже встроенной Intel или AMD. Для слабых ПК используется модель 3B, для мощных — 7B Pro.
+      </div></div>
+    </details>
+    <details class="faq-item">
+      <summary>Где хранятся мои данные?</summary>
+      <div class="faq-body"><div class="faq-body-inner">
+        Только <b>на вашем диске</b>. Чаты, файлы и настройки не покидают устройство. Никакого облака, аналитики и телеметрии.
+      </div></div>
+    </details>
+  </div>
+</section>
+
+<!-- ============ SHOTS ============ -->
+<section class="section section-wide" id="shots">
+  <span class="section-label">Интерфейс</span>
+  <h2 class="section-title">Как это выглядит</h2>
+  <p class="section-sub">Минималистичный тёмный интерфейс. Всё под рукой — без лишнего.</p>
+
+  <div class="shots">
+
+    <!-- CHAT -->
+    <figure class="shot">
+      <div class="shot-visual">
+        <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <rect width="800" height="500" fill="#0b0b0c"/>
+          <rect width="180" height="500" fill="#101012"/>
+          <line x1="180" y1="0" x2="180" y2="500" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="16" y="18" width="22" height="22" rx="7" fill="#f5f5f6"/>
+          <ellipse cx="24" cy="29" rx="1.8" ry="2.4" fill="#0b0b0c"/>
+          <ellipse cx="30" cy="29" rx="1.8" ry="2.4" fill="#0b0b0c"/>
+          <text x="46" y="33" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="700">MIWOO</text>
+          <rect x="8" y="58" width="164" height="26" rx="8" fill="#1c1c1f"/>
+          <circle cx="22" cy="71" r="3" fill="#a7a7ab"/>
+          <text x="34" y="75" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="500">Library</text>
+          <circle cx="22" cy="101" r="3" fill="#7a7a7d"/>
+          <text x="34" y="105" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">Automations</text>
+          <circle cx="22" cy="131" r="3" fill="#7a7a7d"/>
+          <text x="34" y="135" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">Plugins</text>
+          <circle cx="22" cy="161" r="3" fill="#7a7a7d"/>
+          <text x="34" y="165" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">My Mivu</text>
+          <text x="22" y="205" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" font-weight="600" letter-spacing=".6">PROJECTS</text>
+          <text x="34" y="230" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">+  Add project</text>
+          <text x="22" y="270" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" font-weight="600" letter-spacing=".6">CHATS</text>
+          <text x="160" y="270" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" text-anchor="end">Clear</text>
+          <text x="34" y="295" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11">+  New chat</text>
+          <text x="160" y="295" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" text-anchor="end">Ctrl+K</text>
+          <text x="34" y="325" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="11">No chats yet</text>
+          <text x="22" y="355" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">Show all</text>
+          <rect x="0" y="380" width="180" height="1" fill="#1f1f22"/>
+          <circle cx="24" cy="415" r="3.5" fill="#7a7a7d"/>
+          <text x="36" y="419" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">Dark theme</text>
+          <rect x="140" y="407" width="26" height="14" rx="7" fill="#1e4d3a"/>
+          <circle cx="159" cy="414" r="5.5" fill="#7be0a8"/>
+          <circle cx="24" cy="445" r="3.5" fill="#7a7a7d"/>
+          <text x="36" y="449" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">OLED</text>
+          <rect x="140" y="437" width="26" height="14" rx="7" fill="#1e4d3a"/>
+          <circle cx="159" cy="444" r="5.5" fill="#7be0a8"/>
+
+          <rect x="322" y="18" width="156" height="34" rx="17" fill="#18181b"/>
+          <rect x="324" y="20" width="74" height="30" rx="15" fill="#2a2a2e"/>
+          <text x="361" y="39" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" text-anchor="middle">Chat</text>
+          <text x="436" y="39" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="11" text-anchor="middle">Mi Code</text>
+          <text x="720" y="39" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" text-anchor="end">🔒 Private</text>
+
+          <rect x="240" y="205" width="420" height="95" rx="18" fill="#161618" stroke="#27272a" stroke-width="1"/>
+          <text x="262" y="248" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="12">Ask anything</text>
+          <text x="608" y="250" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" text-anchor="end">MIWOO AI v1.6</text>
+          <circle cx="632" cy="252" r="14" fill="#f5f5f6"/>
+          <path d="M 626 252 L 636 252 M 631 247 L 636 252 L 631 257" stroke="#0b0b0c" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <rect x="357" y="330" width="86" height="22" rx="11" fill="#18181b"/>
+          <circle cx="372" cy="341" r="2.5" fill="#5a5a60"/>
+          <text x="382" y="345" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">local search is off</text>
+        </svg>
+      </div>
+      <figcaption><b>Чат</b>Главный экран: спросите что угодно — всё считается локально.</figcaption>
+    </figure>
+
+    <!-- LIBRARY -->
+    <figure class="shot">
+      <div class="shot-visual">
+        <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <rect width="800" height="500" fill="#0b0b0c"/>
+          <rect width="180" height="500" fill="#101012"/>
+          <line x1="180" y1="0" x2="180" y2="500" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="16" y="18" width="22" height="22" rx="7" fill="#f5f5f6"/>
+          <ellipse cx="24" cy="29" rx="1.8" ry="2.4" fill="#0b0b0c"/>
+          <ellipse cx="30" cy="29" rx="1.8" ry="2.4" fill="#0b0b0c"/>
+          <text x="46" y="33" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="700">MIWOO</text>
+          <rect x="8" y="58" width="164" height="26" rx="8" fill="#1c1c1f"/>
+          <text x="34" y="75" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="500">Library</text>
+          <text x="34" y="105" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">Automations</text>
+          <text x="34" y="135" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">Plugins</text>
+          <text x="34" y="165" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">My Mivu</text>
+          <text x="22" y="205" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" font-weight="600" letter-spacing=".6">PROJECTS</text>
+          <text x="34" y="230" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">+  Add project</text>
+          <text x="22" y="270" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" font-weight="600" letter-spacing=".6">CHATS</text>
+          <text x="160" y="270" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" text-anchor="end">Clear</text>
+          <text x="34" y="295" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11">+  New chat</text>
+          <text x="160" y="295" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9" text-anchor="end">Ctrl+K</text>
+          <text x="34" y="325" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="11">No chats yet</text>
+          <text x="22" y="355" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="11">Show all</text>
+
+          <rect x="322" y="18" width="156" height="34" rx="17" fill="#18181b"/>
+          <rect x="324" y="20" width="74" height="30" rx="15" fill="#2a2a2e"/>
+          <text x="361" y="39" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" text-anchor="middle">Chat</text>
+          <text x="436" y="39" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="11" text-anchor="middle">Mi Code</text>
+
+          <rect x="216" y="72" width="42" height="26" rx="13" fill="#2a2a2e"/>
+          <text x="237" y="89" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" text-anchor="middle">All</text>
+          <text x="286" y="89" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="11" text-anchor="middle">Media</text>
+          <text x="356" y="89" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="11" text-anchor="middle">Projects</text>
+          <text x="424" y="89" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="11" text-anchor="middle">Apps</text>
+          <text x="482" y="89" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="11" text-anchor="middle">Files</text>
+          <rect x="640" y="70" width="90" height="30" rx="15" fill="#f5f5f6"/>
+          <text x="685" y="89" fill="#0b0b0c" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" text-anchor="middle">Upload files</text>
+
+          <rect x="216" y="120" width="516" height="310" rx="16" fill="#0d0d0f" stroke="#1f1f22" stroke-width="1" stroke-dasharray="5 5"/>
+          <rect x="418" y="196" width="54" height="54" rx="14" fill="#1c1c1f"/>
+          <path d="M 445 216 L 445 232 M 437 224 L 445 232 L 453 224 M 435 238 L 455 238" stroke="#f5f5f6" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="445" y="278" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="15" font-weight="700" text-anchor="middle">Library is empty</text>
+          <text x="445" y="302" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="12" text-anchor="middle">Upload files.</text>
+          <rect x="403" y="326" width="84" height="30" rx="15" fill="#2a2a2e"/>
+          <text x="445" y="345" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="500" text-anchor="middle">Upload files</text>
+        </svg>
+      </div>
+      <figcaption><b>Библиотека</b>Все файлы, медиа и проекты — в одном месте.</figcaption>
+    </figure>
+
+    <!-- AUTOMATIONS -->
+    <figure class="shot">
+      <div class="shot-visual">
+        <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <rect width="800" height="500" fill="#0b0b0c"/>
+          <rect width="130" height="500" fill="#101012"/>
+          <line x1="130" y1="0" x2="130" y2="500" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="14" y="16" width="20" height="20" rx="6" fill="#f5f5f6"/>
+          <ellipse cx="21" cy="26" rx="1.6" ry="2.2" fill="#0b0b0c"/>
+          <ellipse cx="27" cy="26" rx="1.6" ry="2.2" fill="#0b0b0c"/>
+          <text x="42" y="30" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" font-weight="700">MIWOO</text>
+          <rect x="6" y="52" width="118" height="24" rx="7" fill="#1c1c1f"/>
+          <text x="30" y="68" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" font-weight="500">Automations</text>
+          <text x="30" y="96" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10">Library</text>
+          <text x="30" y="120" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10">Plugins</text>
+          <text x="30" y="144" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10">My Mivu</text>
+
+          <rect x="150" y="18" width="90" height="28" rx="14" fill="#2a2a2e"/>
+          <text x="195" y="36" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" font-weight="600" text-anchor="middle">Automations</text>
+          <text x="270" y="36" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">Runs</text>
+          <text x="600" y="36" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="10" text-anchor="end">0 / 2</text>
+          <rect x="620" y="18" width="110" height="28" rx="14" fill="#f5f5f6"/>
+          <text x="675" y="36" fill="#0b0b0c" font-family="-apple-system,sans-serif" font-size="10" font-weight="600" text-anchor="middle">New automation</text>
+
+          <text x="150" y="82" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" font-weight="600">News</text>
+          <rect x="150" y="92" width="230" height="90" rx="10" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="164" y="106" width="24" height="24" rx="7" fill="#3a5bff"/>
+          <text x="176" y="123" fill="#fff" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" text-anchor="middle">A</text>
+          <rect x="318" y="104" width="46" height="22" rx="11" fill="#2a2a2e"/>
+          <text x="341" y="118" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">Add</text>
+          <text x="164" y="150" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Morning Brief</text>
+          <text x="164" y="166" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Morning briefing.</text>
+          <text x="164" y="178" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9">At 7:30</text>
+
+          <rect x="394" y="92" width="230" height="90" rx="10" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="408" y="106" width="24" height="24" rx="7" fill="#3a5bff"/>
+          <text x="420" y="123" fill="#fff" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" text-anchor="middle">B</text>
+          <rect x="562" y="104" width="46" height="22" rx="11" fill="#2a2a2e"/>
+          <text x="585" y="118" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">Add</text>
+          <text x="408" y="150" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">AI Digest</text>
+          <text x="408" y="166" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">AI news digest.</text>
+          <text x="408" y="178" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9">At 8:00</text>
+
+          <text x="150" y="206" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" font-weight="600">Finance</text>
+          <rect x="150" y="216" width="230" height="90" rx="10" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="164" y="230" width="24" height="24" rx="7" fill="#ff9f1c"/>
+          <text x="176" y="247" fill="#fff" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" text-anchor="middle">C</text>
+          <rect x="318" y="228" width="46" height="22" rx="11" fill="#2a2a2e"/>
+          <text x="341" y="242" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">Add</text>
+          <text x="164" y="274" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Daily Crypto</text>
+          <text x="164" y="290" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">BTC and ETH price.</text>
+          <text x="164" y="302" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9">At 14:00</text>
+
+          <text x="150" y="330" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" font-weight="600">Productivity</text>
+          <rect x="150" y="340" width="230" height="90" rx="10" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="164" y="354" width="24" height="24" rx="7" fill="#ff5aa1"/>
+          <text x="176" y="371" fill="#fff" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" text-anchor="middle">D</text>
+          <rect x="318" y="352" width="46" height="22" rx="11" fill="#2a2a2e"/>
+          <text x="341" y="366" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">Add</text>
+          <text x="164" y="398" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Weekly Review</text>
+          <text x="164" y="414" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Weekly review.</text>
+          <text x="164" y="426" fill="#5a5a60" font-family="-apple-system,sans-serif" font-size="9">Friday</text>
+
+          <text x="150" y="454" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" font-weight="600">Lifestyle</text>
+          <rect x="150" y="464" width="230" height="36" rx="10" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="164" y="472" width="24" height="24" rx="7" fill="#3a5bff"/>
+          <text x="176" y="489" fill="#fff" font-family="-apple-system,sans-serif" font-size="12" font-weight="700" text-anchor="middle">E</text>
+        </svg>
+      </div>
+      <figcaption><b>Автоматизации</b>Готовые сценарии: брифинг, крипто-сводка, отчёты.</figcaption>
+    </figure>
+
+    <!-- PLUGINS -->
+    <figure class="shot">
+      <div class="shot-visual">
+        <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <rect width="800" height="500" fill="#0b0b0c"/>
+          <rect width="130" height="500" fill="#101012"/>
+          <line x1="130" y1="0" x2="130" y2="500" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="14" y="16" width="20" height="20" rx="6" fill="#f5f5f6"/>
+          <ellipse cx="21" cy="26" rx="1.6" ry="2.2" fill="#0b0b0c"/>
+          <ellipse cx="27" cy="26" rx="1.6" ry="2.2" fill="#0b0b0c"/>
+          <text x="42" y="30" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" font-weight="700">MIWOO</text>
+          <rect x="6" y="52" width="118" height="24" rx="7" fill="#1c1c1f"/>
+          <text x="30" y="68" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="10" font-weight="500">Plugins</text>
+          <text x="30" y="96" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10">Library</text>
+          <text x="30" y="120" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10">Automations</text>
+          <text x="30" y="144" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10">My Mivu</text>
+
+          <text x="150" y="42" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="14" font-weight="700">Plugins</text>
+
+          <!-- row 1 -->
+          <rect x="150" y="60" width="210" height="100" rx="12" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="164" y="74" width="26" height="26" rx="8" fill="#3a5bff"/>
+          <text x="177" y="92" fill="#fff" font-family="-apple-system,sans-serif" font-size="13" font-weight="700" text-anchor="middle">W</text>
+          <rect x="318" y="78" width="30" height="16" rx="8" fill="#1e4d3a"/>
+          <circle cx="342" cy="86" r="6" fill="#7be0a8"/>
+          <text x="164" y="120" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Web search</text>
+          <text x="164" y="134" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Autonomous web search</text>
+          <circle cx="167" cy="150" r="2.5" fill="#7be0a8"/>
+          <text x="174" y="153" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Active</text>
+
+          <rect x="374" y="60" width="210" height="100" rx="12" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="388" y="74" width="26" height="26" rx="8" fill="#2ecc71"/>
+          <text x="401" y="92" fill="#fff" font-family="-apple-system,sans-serif" font-size="13" font-weight="700" text-anchor="middle">E</text>
+          <rect x="542" y="78" width="30" height="16" rx="8" fill="#2a2a2e"/>
+          <circle cx="550" cy="86" r="6" fill="#5a5a60"/>
+          <text x="388" y="120" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Code explanation</text>
+          <text x="388" y="134" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Breakdown line by line</text>
+          <circle cx="391" cy="150" r="2.5" fill="#5a5a60"/>
+          <text x="398" y="153" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Off</text>
+
+          <rect x="598" y="60" width="186" height="100" rx="12" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="612" y="74" width="26" height="26" rx="8" fill="#ff9f1c"/>
+          <text x="625" y="92" fill="#fff" font-family="-apple-system,sans-serif" font-size="13" font-weight="700" text-anchor="middle">S</text>
+          <rect x="744" y="78" width="30" height="16" rx="8" fill="#2a2a2e"/>
+          <circle cx="752" cy="86" r="6" fill="#5a5a60"/>
+          <text x="612" y="120" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">File summary</text>
+          <text x="612" y="134" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Short document summary</text>
+          <circle cx="615" cy="150" r="2.5" fill="#5a5a60"/>
+          <text x="622" y="153" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Pro</text>
+
+          <!-- row 2 -->
+          <rect x="150" y="176" width="210" height="100" rx="12" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="164" y="190" width="26" height="26" rx="8" fill="#9b5de5"/>
+          <text x="177" y="208" fill="#fff" font-family="-apple-system,sans-serif" font-size="13" font-weight="700" text-anchor="middle">V</text>
+          <rect x="318" y="194" width="30" height="16" rx="8" fill="#2a2a2e"/>
+          <circle cx="326" cy="202" r="6" fill="#5a5a60"/>
+          <text x="164" y="236" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Screen vision</text>
+          <text x="164" y="250" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">MIWOO sees your screen</text>
+          <circle cx="167" cy="266" r="2.5" fill="#5a5a60"/>
+          <text x="174" y="269" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Pro</text>
+
+          <rect x="374" y="176" width="210" height="100" rx="12" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="388" y="190" width="26" height="26" rx="8" fill="#ff5aa1"/>
+          <text x="401" y="208" fill="#fff" font-family="-apple-system,sans-serif" font-size="13" font-weight="700" text-anchor="middle">T</text>
+          <rect x="542" y="194" width="30" height="16" rx="8" fill="#2a2a2e"/>
+          <circle cx="550" cy="202" r="6" fill="#5a5a60"/>
+          <text x="388" y="236" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Pro translation</text>
+          <text x="388" y="250" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Preserving style</text>
+          <circle cx="391" cy="266" r="2.5" fill="#5a5a60"/>
+          <text x="398" y="269" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Pro</text>
+
+          <rect x="598" y="176" width="186" height="100" rx="12" fill="#141416" stroke="#1f1f22" stroke-width="1"/>
+          <rect x="612" y="190" width="26" height="26" rx="8" fill="#2ec5ff"/>
+          <text x="625" y="208" fill="#fff" font-family="-apple-system,sans-serif" font-size="13" font-weight="700" text-anchor="middle">D</text>
+          <rect x="744" y="194" width="30" height="16" rx="8" fill="#2a2a2e"/>
+          <circle cx="752" cy="202" r="6" fill="#5a5a60"/>
+          <text x="612" y="236" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600">Data visualization</text>
+          <text x="612" y="250" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Charts and plots</text>
+          <circle cx="615" cy="266" r="2.5" fill="#5a5a60"/>
+          <text x="622" y="269" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="9">Pro</text>
+        </svg>
+      </div>
+      <figcaption><b>Плагины</b>Web search, Screen vision, перевод, саммари и другое.</figcaption>
+    </figure>
+
+    <!-- BRAIN GRAPH -->
+    <figure class="shot">
+      <div class="shot-visual">
+        <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+          <rect width="800" height="500" fill="#0b0b0c"/>
+          <text x="24" y="34" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="14" font-weight="700">Brain Graph</text>
+          <text x="24" y="52" fill="#7a7a7d" font-family="-apple-system,sans-serif" font-size="10">4 nodes · 3 links</text>
+          <rect x="740" y="20" width="36" height="36" rx="10" fill="#1c1c1f"/>
+          <path d="M 753 33 L 763 43 M 763 33 L 753 43" stroke="#a7a7ab" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+
+          <line x1="400" y1="255" x2="360" y2="200" stroke="#3a3a44" stroke-width="1"/>
+          <line x1="400" y1="255" x2="480" y2="240" stroke="#3a3a44" stroke-width="1"/>
+          <line x1="400" y1="255" x2="360" y2="330" stroke="#3a3a44" stroke-width="1"/>
+
+          <circle cx="400" cy="255" r="9" fill="#f5f5f6"/>
+          <circle cx="400" cy="255" r="16" fill="none" stroke="#f5f5f6" stroke-opacity=".18" stroke-width="1"/>
+          <text x="400" y="288" fill="#f5f5f6" font-family="-apple-system,sans-serif" font-size="11" font-weight="600" text-anchor="middle">MIWOO</text>
+
+          <circle cx="360" cy="200" r="4" fill="#5a7bff"/>
+          <text x="360" y="186" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">search</text>
+
+          <circle cx="480" cy="240" r="4" fill="#7be0a8"/>
+          <text x="480" y="226" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">chat</text>
+
+          <circle cx="360" cy="330" r="4" fill="#7b8fff"/>
+          <text x="360" y="316" fill="#a7a7ab" font-family="-apple-system,sans-serif" font-size="10" text-anchor="middle">files</text>
+        </svg>
+      </div>
+      <figcaption><b>Brain Graph</b>Визуализация связей между чатами, поиском и файлами.</figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<footer class="footer">
+  MIWOO © 2026 <span>·</span> Локальный ассистент
+  <span>·</span> Все данные хранятся у вас
+</footer>
+
+<canvas id="waves" aria-hidden="true"></canvas>
+
+<!-- ============ INSTALL MODAL ============ -->
+<div class="modal" id="installModal" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+  <div class="modal-box">
+    <button class="modal-close" id="installClose" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <h3 id="installTitle">Установка MIWOO</h3>
+    <p class="modal-sub">Установка выполняется одной командой в PowerShell. Скрипт сам скачает и настроит всё необходимое — это займёт меньше минуты.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Откройте PowerShell от администратора</div>
+        <div class="step-desc">Нажмите <span class="kbd">Win</span> + <span class="kbd">X</span> и выберите <b>«Терминал (администратор)»</b> или <b>«Windows PowerShell (администратор)»</b>.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Вставьте команду и нажмите Enter</div>
+        <div class="step-desc">Скопируйте команду ниже — она загрузит официальный установщик MIWOO напрямую из GitHub.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Дождитесь завершения установки</div>
+        <div class="step-desc">Через ~1 минуту ярлык <b>MIWOO</b> появится на рабочем столе. Первый запуск может занять чуть больше времени — загружается модель.</div>
+      </div>
+    </div>
+
+    <div class="cmd-block">
+      <div class="cmd-head">
+        <span class="cmd-lang"><span class="cmd-dot"></span>PowerShell</span>
+        <button class="cmd-copy" id="copyCmd" aria-label="Скопировать команду">
+          <svg class="ic-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <svg class="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <span id="copyLabel">Копировать</span>
+        </button>
+      </div>
+      <pre class="cmd-code" id="cmdText">irm "https://raw.githubusercontent.com/ploleg811-code/miwoo/refs/heads/main/MIWOO_INSTALL_fixed_v21.ps1" <span class="cmd-pipe">|</span> iex</pre>
+    </div>
+
+    <div class="cmd-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      <div><b>Безопасно.</b> Скрипт открыт и доступен по ссылке — вы можете просмотреть его содержимое перед запуском. Ничего не отправляется наружу: всё скачивается и работает локально.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ REQS MODAL ============ -->
+<div class="modal" id="reqsModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="modal-close" id="reqsClose" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <h3>Системные требования</h3>
+    <p class="modal-sub">MIWOO работает на любом современном ПК. Модель ИИ загружается один раз и работает офлайн — без интернета.</p>
+
+    <div class="reqs-grid">
+      <div class="req-card">
+        <div class="req-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <div class="req-title">Операционная система</div>
+        <div class="req-val"><b>Windows 10</b> или <b>Windows 11</b> (64-bit). Сборка 1903 или новее.</div>
+      </div>
+      <div class="req-card">
+        <div class="req-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M4 9h2M4 12h2M4 15h2M18 9h2M18 12h2M18 15h2M9 4v2M12 4v2M15 4v2M9 18v2M12 18v2M15 18v2"/></svg></div>
+        <div class="req-title">Процессор</div>
+        <div class="req-val">Любой <b>x64</b> процессор. Intel Core i3 / AMD Ryzen 3 и выше.</div>
+      </div>
+      <div class="req-card">
+        <div class="req-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6h12v12H6z"/><path d="M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3"/></svg></div>
+        <div class="req-title">Оперативная память</div>
+        <div class="req-val"><b>8 ГБ</b> минимум · <b>16 ГБ</b> рекомендуется для модели Pro 7B.</div>
+      </div>
+      <div class="req-card">
+        <div class="req-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg></div>
+        <div class="req-title">Графика</div>
+        <div class="req-val">Любая <b>WebGPU-совместимая</b>. Встроенная Intel / AMD тоже подойдёт.</div>
+      </div>
+      <div class="req-card">
+        <div class="req-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l4-4h10l4 4v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/><path d="M3 7h18M8 11h8M8 15h5"/></svg></div>
+        <div class="req-title">Место на диске</div>
+        <div class="req-val"><b>5 ГБ</b> для установки и моделей. Кэш хранится локально.</div>
+      </div>
+      <div class="req-card">
+        <div class="req-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></div>
+        <div class="req-title">Интернет</div>
+        <div class="req-val">Нужен только при установке. Дальше — <b>полностью офлайн</b>.</div>
+      </div>
+    </div>
+
+    <div class="req-footer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+      <div>Если у вас 6 ГБ RAM или встроенная графика — MIWOO работает, но модель 3B рекомендуется вместо 7B Pro. Обе версии совместимы с одинаковыми требованиями.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========== FLAGS ========== */
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ========== WAVES ========== */
+(function(){
+  const canvas = document.getElementById('waves');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d', { alpha: true });
+  let W = 0, H = 0, dpr = 1, t = 0, raf = null, lastFrame = 0;
+  const FRAME_MS = 1000 / 30, GAP = 26;
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width  = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function getRGB(){
+    const e = document.documentElement.getAttribute('data-theme');
+    const isDark = e === 'dark' || (e !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return isDark ? '150,150,160' : '90,90,100';
+  }
+  function drawStatic(){
+    const rgb = getRGB(); ctx.clearRect(0, 0, W, H);
+    const cols = Math.ceil(W / GAP) + 1, rows = Math.ceil(H / GAP) + 1;
+    for(let i = 0; i < cols; i++) for(let j = 0; j < rows; j++){
+      const nx = i / cols, ny = j / rows;
+      const wave = (Math.sin(nx*6.5+ny*3) + Math.sin(nx*3.1+ny*5)) / 2;
+      const alpha = 0.32 * (0.5 + 0.5 * wave); if(alpha < 0.02) continue;
+      ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
+      ctx.beginPath(); ctx.arc(i*GAP, j*GAP + wave*14, 1.3 + wave*0.6, 0, Math.PI*2); ctx.fill();
+    }
+  }
+  function draw(now){
+    raf = requestAnimationFrame(draw);
+    if(now - lastFrame < FRAME_MS) return; lastFrame = now;
+    const rgb = getRGB(); ctx.clearRect(0, 0, W, H);
+    const cols = Math.ceil(W / GAP) + 1, rows = Math.ceil(H / GAP) + 1;
+    for(let i = 0; i < cols; i++) for(let j = 0; j < rows; j++){
+      const x = i*GAP, y = j*GAP;
+      const nx = i / cols, ny = j / rows;
+      const w1 = Math.sin(nx*6.5 + ny*3 + t*0.7);
+      const w2 = Math.sin(nx*3.1 - t*0.5 + ny*5 - t*0.3);
+      const wave = (w1 + w2)/2;
+      const alpha = 0.32 * (0.5 + 0.5 * wave); if(alpha < 0.02) continue;
+      ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
+      ctx.beginPath(); ctx.arc(x, y + wave*14, 1.3 + wave*0.6, 0, Math.PI*2); ctx.fill();
+    }
+    t += 0.010;
+  }
+  resize(); window.addEventListener('resize', resize, { passive: true });
+  function start(){ if(REDUCED_MOTION){ drawStatic(); return; } if(!raf) raf = requestAnimationFrame(draw); }
+  function stop(){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
+  document.addEventListener('visibilitychange', () => { if(document.hidden) stop(); else start(); });
+  if(document.readyState === 'complete') start();
+  else window.addEventListener('load', start, { once: true });
+})();
+
+/* ========== THEME ========== */
+(function(){
+  const root = document.documentElement, btn = document.getElementById('themeToggle');
+  const iSun = btn.querySelector('.i-sun'), iMoon = btn.querySelector('.i-moon');
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  function isDarkNow(){ const e = root.getAttribute('data-theme'); if(e === 'dark') return true; if(e === 'light') return false; return mq.matches; }
+  function syncIcon(){ const d = isDarkNow(); iSun.style.display = d ? 'block' : 'none'; iMoon.style.display = d ? 'none' : 'block'; }
+  btn.addEventListener('click', () => { root.setAttribute('data-theme', isDarkNow() ? 'light' : 'dark'); syncIcon(); });
+  mq.addEventListener('change', () => { if(!root.hasAttribute('data-theme')) syncIcon(); });
+  syncIcon();
+})();
+
+/* ========== COUNTER ========== */
+(function(){
+  const KEY_COUNT = 'miwoo_dl_count', KEY_NEXT = 'miwoo_dl_next';
+  const START_COUNT = 11498, BUMP_AMOUNT = 5;
+  const MIN_INTERVAL = 2*60*60*1000, MAX_INTERVAL = 3*60*60*1000, INTRO_DURATION = 1200;
+  const wrap = document.getElementById('dlCounter'), el = document.getElementById('dlCount');
+  if(!wrap || !el) return;
+  const randInterval = () => MIN_INTERVAL + Math.random() * (MAX_INTERVAL - MIN_INTERVAL);
+  const safeGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+  const safeSet = (k,v) => { try { localStorage.setItem(k,v); } catch(e){} };
+  const fmt = n => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  function makeSlot(ch){ const s = document.createElement('span'); s.className = 'd-slot' + (/[^0-9]/.test(ch) ? ' d-sep' : ''); s.dataset.ch = ch; s.textContent = ch; return s; }
+  function renderCount(n, animate){
+    const chars = fmt(n).split('');
+    if(el.children.length !== chars.length){
+      el.textContent = ''; const f = document.createDocumentFragment();
+      chars.forEach(ch => f.appendChild(makeSlot(ch))); el.appendChild(f); return;
+    }
+    for(let i = 0; i < chars.length; i++){
+      const slot = el.children[i], oldCh = slot.dataset.ch, newCh = chars[i];
+      if(oldCh === newCh) continue; slot.dataset.ch = newCh;
+      if(!animate){ slot.textContent = newCh; continue; }
+      slot.classList.remove('rolling'); slot.textContent = '';
+      const oldEl = document.createElement('span'); oldEl.className = 'd-char old'; oldEl.textContent = oldCh;
+      const newEl = document.createElement('span'); newEl.className = 'd-char new'; newEl.textContent = newCh;
+      slot.appendChild(oldEl); slot.appendChild(newEl); void slot.offsetWidth; slot.classList.add('rolling');
+      let cleaned = false;
+      const cleanup = () => { if(cleaned) return; cleaned = true; slot.classList.remove('rolling'); slot.textContent = newCh; };
+      oldEl.addEventListener('animationend', cleanup, { once: true }); setTimeout(cleanup, 600);
+    }
+  }
+  function playIntro(target, onDone){
+    const chars = fmt(target).split('');
+    el.textContent = ''; const f = document.createDocumentFragment();
+    chars.forEach(ch => f.appendChild(makeSlot(ch))); el.appendChild(f);
+    const digits = [];
+    for(let i = 0; i < chars.length; i++){
+      const slot = el.children[i];
+      if(/[0-9]/.test(chars[i])){ slot.textContent = '0'; slot.dataset.ch = '0'; digits.push({ slot, finalCh: chars[i] }); }
+    }
+    el.classList.add('intro'); const start = performance.now(); let lastTick = 0;
+    function frame(now){
+      const t = now - start;
+      if(t >= INTRO_DURATION){
+        for(const d of digits){ d.slot.textContent = d.finalCh; d.slot.dataset.ch = d.finalCh; }
+        el.classList.remove('intro'); el.classList.add('done');
+        setTimeout(() => el.classList.remove('done'), 700);
+        if(onDone) onDone(); return;
+      }
+      if(now - lastTick >= 40){ lastTick = now; for(const d of digits) d.slot.textContent = (Math.random() * 10) | 0; }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+  let count = parseInt(safeGet(KEY_COUNT), 10);
+  if(!Number.isFinite(count) || count < START_COUNT) count = START_COUNT;
+  const now = Date.now(); let next = parseInt(safeGet(KEY_NEXT), 10);
+  if(!Number.isFinite(next) || next <= 0 || next > now + MAX_INTERVAL + 60000) next = now + randInterval();
+  while(now >= next){ count += BUMP_AMOUNT; next += randInterval(); }
+  safeSet(KEY_COUNT, count); safeSet(KEY_NEXT, next);
+  let introPlaying = true, timer = null;
+  function schedule(){
+    clearTimeout(timer);
+    const delay = Math.max(1500, next - Date.now());
+    timer = setTimeout(() => {
+      count += BUMP_AMOUNT; next = Date.now() + randInterval();
+      safeSet(KEY_COUNT, count); safeSet(KEY_NEXT, next);
+      renderCount(count, true); schedule();
+    }, delay);
+  }
+  if(REDUCED_MOTION){
+    el.textContent = ''; const f = document.createDocumentFragment();
+    fmt(count).split('').forEach(ch => f.appendChild(makeSlot(ch))); el.appendChild(f);
+    introPlaying = false; schedule();
+  } else {
+    playIntro(count, () => { introPlaying = false; schedule(); });
+  }
+  window.__miwooCountDownload = function(){
+    count += 1; safeSet(KEY_COUNT, count);
+    if(introPlaying) return; renderCount(count, true);
+  };
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden || introPlaying) return;
+    const t = Date.now(); let changed = false;
+    while(t >= next){ count += BUMP_AMOUNT; next += randInterval(); changed = true; }
+    if(changed){ safeSet(KEY_COUNT, count); safeSet(KEY_NEXT, next); renderCount(count, true); schedule(); }
+  });
+})();
+
+/* ========== FAQ SMOOTH ANIMATION ========== */
+(function(){
+  if(REDUCED_MOTION) return;
+  const DURATION = 380;
+  const EASING = 'cubic-bezier(.4,0,.2,1)';
+
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const summary = item.querySelector('summary');
+    const body = item.querySelector('.faq-body');
+    if(!summary || !body) return;
+
+    let busy = false;
+
+    summary.addEventListener('click', e => {
+      e.preventDefault();
+      if(busy) return;
+      busy = true;
+
+      if(item.open){
+        // Collapse
+        const startH = body.scrollHeight;
+        body.style.height = startH + 'px';
+        body.style.opacity = '1';
+        void body.offsetHeight;
+        body.style.transition = `height ${DURATION}ms ${EASING}, opacity ${DURATION - 80}ms ease`;
+        body.style.height = '0px';
+        body.style.opacity = '0';
+
+        setTimeout(() => {
+          item.open = false;
+          body.style.transition = '';
+          body.style.height = '';
+          body.style.opacity = '';
+          busy = false;
+        }, DURATION);
+      } else {
+        // Expand
+        item.open = true;
+        const endH = body.scrollHeight;
+        body.style.transition = '';
+        body.style.height = '0px';
+        body.style.opacity = '0';
+        void body.offsetHeight;
+        body.style.transition = `height ${DURATION}ms ${EASING}, opacity ${DURATION - 80}ms ease`;
+        body.style.height = endH + 'px';
+        body.style.opacity = '1';
+
+        setTimeout(() => {
+          body.style.transition = '';
+          body.style.height = '';
+          body.style.opacity = '';
+          busy = false;
+        }, DURATION);
+      }
+    });
+  });
+})();
+
+/* ========== MODALS ========== */
+const installModal = document.getElementById('installModal');
+const reqsModal    = document.getElementById('reqsModal');
+
+function openModal(m){ m.classList.remove('closing'); m.classList.add('show'); document.body.style.overflow = 'hidden'; }
+function closeModal(m){
+  if(!m.classList.contains('show')) return;
+  m.classList.add('closing');
+  let done = false;
+  const finish = () => { if(done) return; done = true; m.classList.remove('show', 'closing'); document.body.style.overflow = ''; };
+  m.addEventListener('animationend', finish, { once: true });
+  setTimeout(finish, 320);
+}
+
+document.getElementById('downloadBtn').addEventListener('click', () => openModal(installModal));
+document.getElementById('installClose').addEventListener('click', () => closeModal(installModal));
+installModal.addEventListener('click', e => { if(e.target === installModal) closeModal(installModal); });
+document.getElementById('openReqs').addEventListener('click', () => openModal(reqsModal));
+document.getElementById('reqsClose').addEventListener('click', () => closeModal(reqsModal));
+reqsModal.addEventListener('click', e => { if(e.target === reqsModal) closeModal(reqsModal); });
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(installModal.classList.contains('show')) closeModal(installModal);
+    if(reqsModal.classList.contains('show'))     closeModal(reqsModal);
+  }
+});
+
+/* ========== COPY CMD ========== */
+(function(){
+  const CMD = 'irm "https://raw.githubusercontent.com/ploleg811-code/miwoo/refs/heads/main/MIWOO_INSTALL_fixed_v21.ps1" | iex';
+  const btn = document.getElementById('copyCmd'), lbl = document.getElementById('copyLabel');
+  if(!btn) return;
+  function fallbackCopy(text){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:-1000px;opacity:0;pointer-events:none';
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand('copy'); ta.remove(); return ok;
+    }catch(e){ return false; }
+  }
+  async function copyText(text){
+    try{ if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); return true; } }catch(e){}
+    return fallbackCopy(text);
+  }
+  let resetTimer = null;
+  btn.addEventListener('click', async () => {
+    const ok = await copyText(CMD);
+    clearTimeout(resetTimer);
+    if(ok){
+      btn.classList.add('copied'); lbl.textContent = 'Скопировано';
+      showToast('Команда скопирована в буфер обмена');
+      if(typeof window.__miwooCountDownload === 'function') window.__miwooCountDownload();
+      resetTimer = setTimeout(() => { btn.classList.remove('copied'); lbl.textContent = 'Копировать'; }, 2000);
+    } else {
+      lbl.textContent = 'Не удалось';
+      resetTimer = setTimeout(() => { lbl.textContent = 'Копировать'; }, 2000);
+    }
+  });
+})();
+
+/* ========== TOAST ========== */
+function showToast(msg){
+  const el = document.createElement('div');
+  el.textContent = msg;
+  el.style.cssText = `
+    position:fixed;bottom:32px;left:50%;transform:translate(-50%,20px);
+    background:rgba(10,10,15,.92);color:#fff;padding:13px 22px;border-radius:14px;
+    font-size:13.5px;font-weight:500;box-shadow:0 12px 40px rgba(0,0,0,.3);
+    backdrop-filter:blur(12px);opacity:0;transition:opacity .3s,transform .3s;
+    z-index:9999;font-family:inherit;will-change:transform,opacity;
+    max-width:calc(100vw - 48px);text-align:center;
+  `;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translate(-50%,0)'; });
+  setTimeout(() => {
+    el.style.opacity = '0'; el.style.transform = 'translate(-50%,20px)';
+    setTimeout(() => el.remove(), 350);
+  }, 2800);
+}
+</script>
+</body>
+</html>
